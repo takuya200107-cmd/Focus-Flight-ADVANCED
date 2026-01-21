@@ -1,0 +1,975 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FlightFocus (HTML MVP)</title>
+  <meta name="color-scheme" content="dark" />
+  <style>
+    :root{
+      --bg:#050608;
+      --panel:rgba(255,255,255,.045);
+      --panel2:rgba(255,255,255,.06);
+      --border:rgba(255,255,255,.10);
+      --border2:rgba(255,255,255,.16);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.55);
+      --muted2:rgba(255,255,255,.40);
+      --good:rgba(255,255,255,.92);
+      --ink:#0a0c10;
+      --accent:#ffffff;
+      --shadow:0 20px 80px -40px rgba(0,0,0,.9);
+      --radius:18px;
+      --radius2:22px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background:var(--bg);
+      color:var(--text);
+      overflow-x:hidden;
+    }
+    /* cockpit grid */
+    .bgfx{
+      position:fixed; inset:0; pointer-events:none;
+      opacity:.22;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(255,255,255,.12), transparent 45%),
+        radial-gradient(circle at 80% 30%, rgba(255,255,255,.08), transparent 55%),
+        linear-gradient(to right, rgba(255,255,255,.07) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.07) 1px, transparent 1px);
+      background-size:auto, auto, 60px 60px, 60px 60px;
+      filter:contrast(1.02);
+    }
+    .wrap{position:relative; max-width:1100px; margin:0 auto; padding:28px 16px 60px}
+    header{
+      display:flex; gap:14px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    .brand{
+      display:flex; gap:12px; align-items:center;
+    }
+    .logo{
+      width:44px;height:44px;border-radius:16px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.05);
+      display:grid; place-items:center;
+      box-shadow:var(--shadow);
+    }
+    .title{font-size:20px; font-weight:700; letter-spacing:-.02em; margin:0}
+    .subtitle{font-size:12px; color:var(--muted); margin-top:2px}
+    .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
+    .chip{
+      display:inline-flex; gap:6px; align-items:center;
+      font-size:12px; color:rgba(255,255,255,.82);
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      backdrop-filter: blur(12px);
+    }
+    .chip b{font-weight:700; color:rgba(255,255,255,.92)}
+    .rightbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .milesCard{
+      border:1px solid var(--border);
+      background:var(--panel);
+      border-radius:20px;
+      padding:10px 14px;
+      display:flex; gap:12px; align-items:center;
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+    .milesIcon{
+      width:38px;height:38px;border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      display:grid; place-items:center;
+    }
+    .milesCard .k{font-size:12px; color:var(--muted)}
+    .milesCard .v{font-size:18px; font-weight:800; font-variant-numeric:tabular-nums}
+    .btn{
+      cursor:pointer;
+      border-radius:14px;
+      padding:10px 12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.10);
+      color:rgba(255,255,255,.92);
+      font-weight:650;
+      letter-spacing:-.01em;
+      transition:transform .05s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+      user-select:none;
+    }
+    .btn:hover{background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.22)}
+    .btn:active{transform:scale(.985)}
+    .btn.primary{
+      background:#fff; color:#000; border-color:#fff;
+    }
+    .btn.primary:hover{background:rgba(255,255,255,.92)}
+    .btn.danger{
+      background:rgba(255,255,255,.10);
+      border-color:rgba(255,255,255,.18);
+    }
+    .btn:disabled{opacity:.45; cursor:not-allowed}
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+    }
+    @media(min-width:980px){
+      .grid{grid-template-columns: 420px 1fr; gap:16px}
+    }
+    .card{
+      border:1px solid var(--border);
+      background:var(--panel);
+      border-radius:var(--radius2);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+    .card .pad{padding:14px}
+    .card h3{
+      margin:0;
+      font-size:13px;
+      font-weight:800;
+      letter-spacing:.02em;
+      color:rgba(255,255,255,.92);
+    }
+    .row{display:flex; justify-content:space-between; gap:10px; align-items:center}
+    .hint{font-size:12px; color:var(--muted)}
+    .field{display:flex; flex-direction:column; gap:6px}
+    .labelrow{display:flex; justify-content:space-between; align-items:center}
+    .label{font-size:12px; font-weight:700; color:rgba(255,255,255,.72)}
+    .label small{font-weight:600; color:var(--muted2)}
+    input, select, textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.45);
+      color:rgba(255,255,255,.92);
+      outline:none;
+      font-size:14px;
+    }
+    textarea{resize:none}
+    input:focus, select:focus, textarea:focus{border-color:rgba(255,255,255,.28)}
+    .two{display:grid; grid-template-columns:1fr; gap:12px}
+    @media(min-width:560px){.two{grid-template-columns:1fr 1fr}}
+    .panel{
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.45);
+      border-radius:18px;
+      padding:12px;
+    }
+    .kpi{
+      display:flex; justify-content:space-between; align-items:end; gap:10px;
+      margin-top:10px;
+    }
+    .kpi .big{
+      font-size:34px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-.02em;
+    }
+    .kpi .small{font-size:12px; color:var(--muted)}
+    .meter{margin-top:12px}
+    .bar{
+      height:10px; width:100%;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:999px; overflow:hidden;
+    }
+    .fill{height:100%; width:0%; background:#fff; transition:width .25s ease}
+    .meterlabels{display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--muted2)}
+    .actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
+    .smallnote{font-size:11px; color:var(--muted2); margin-top:10px}
+    .storeItem{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.45);
+      border-radius:18px;
+      padding:12px;
+      margin-top:10px;
+    }
+    .storeItem .top{display:flex; justify-content:space-between; gap:10px; align-items:start}
+    .storeItem .name{font-weight:850}
+    .storeItem .desc{font-size:11px; color:var(--muted2); margin-top:4px}
+    .storeItem .tagline{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px}
+    .tag{font-size:12px; padding:5px 9px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:rgba(255,255,255,.80)}
+    .logItem{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.45);
+      border-radius:18px;
+      padding:12px;
+      margin-top:10px;
+    }
+    .logTop{display:flex; justify-content:space-between; gap:10px; align-items:start}
+    .logTitle{font-weight:850}
+    .logMeta{font-size:11px; color:var(--muted2); margin-top:4px}
+    .logNote{margin-top:8px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.05); border-radius:14px; padding:8px 10px; font-size:12px; color:rgba(255,255,255,.78)}
+    footer{
+      margin-top:18px; text-align:center; color:rgba(255,255,255,.33); font-size:11px
+    }
+    .sep{height:1px; background:rgba(255,255,255,.08); margin:12px 0}
+    .mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+  </style>
+</head>
+
+<body>
+  <div class="bgfx"></div>
+
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="brand">
+          <div class="logo" aria-hidden="true">✈️</div>
+          <div>
+            <h1 class="title">FlightFocus <span style="font-size:12px;color:var(--muted)">HTML MVP</span></h1>
+            <div class="subtitle">Cockpit-grade focus tracking • Miles for mastery</div>
+          </div>
+        </div>
+        <div class="chips">
+          <div class="chip">🏆 <b id="gradeName">Member</b></div>
+          <div class="chip">⏱️ 7d: <b class="mono" id="mins7d">0</b> min</div>
+          <div class="chip">📈 Rate: <b class="mono" id="rate">10</b>/min</div>
+        </div>
+      </div>
+
+      <div class="rightbar">
+        <div class="milesCard">
+          <div class="milesIcon" aria-hidden="true">↗️</div>
+          <div>
+            <div class="k">Total Miles</div>
+            <div class="v mono" id="miles">0</div>
+          </div>
+        </div>
+        <button class="btn" id="resetBtn">Reset</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left column -->
+      <section class="card">
+        <div class="pad">
+          <div class="row">
+            <h3>Flight Plan</h3>
+            <div class="chip">✈️ <b id="draftAircraftChip">A320</b></div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="field">
+            <div class="labelrow">
+              <div class="label">Callsign (Task title)</div>
+              <small class="hint">Required</small>
+            </div>
+            <input id="title" placeholder="e.g., Eiken Writing / Math II / Report Draft" />
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="two">
+            <div class="field">
+              <div class="labelrow">
+                <div class="label">Mission</div>
+              </div>
+              <select id="type">
+                <option value="STUDY">Study</option>
+                <option value="WORK">Work</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <div class="labelrow">
+                <div class="label">Planned time</div>
+                <small class="hint">min</small>
+              </div>
+              <input id="plannedMin" type="number" min="5" max="480" value="50" />
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="two">
+            <div class="field">
+              <div class="labelrow">
+                <div class="label">Aircraft</div>
+              </div>
+              <select id="aircraft"></select>
+            </div>
+
+            <div class="field">
+              <div class="labelrow">
+                <div class="label">Cabin Class</div>
+                <small class="hint" id="cabinHint">Owned</small>
+              </div>
+              <select id="cabin"></select>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="panel">
+            <div class="row">
+              <div class="hint">Projected miles (if landed)</div>
+              <div class="mono" style="font-weight:900" id="projectedMiles">0</div>
+            </div>
+            <div class="smallnote">Includes: aircraft × cabin × grade multiplier</div>
+          </div>
+
+          <div class="actions">
+            <button class="btn primary" id="startBtn">Board & Depart</button>
+            <button class="btn" id="scrollNotesBtn">Flight Notes</button>
+          </div>
+          <div class="smallnote" id="startTip">Tip: add a title and set at least 5 minutes.</div>
+        </div>
+      </section>
+
+      <!-- Right column -->
+      <section style="display:flex;flex-direction:column;gap:14px">
+        <!-- Cockpit -->
+        <div class="card">
+          <div class="pad">
+            <div class="row">
+              <div>
+                <h3>Cockpit</h3>
+                <div class="hint">Taxi → Climb → Cruise → Descent → Land</div>
+              </div>
+              <div class="chips" style="margin:0">
+                <div class="chip">✈️ <b id="activeAircraft">A320</b></div>
+                <div class="chip">↗️ <b id="activeCabin">Economy</b></div>
+                <div class="chip">🏆 <b id="activeGrade">Member</b></div>
+              </div>
+            </div>
+
+            <div style="height:12px"></div>
+
+            <div class="two">
+              <div class="panel">
+                <div class="hint">Flight</div>
+                <div style="margin-top:4px; font-size:16px; font-weight:900" id="activeTitle">—</div>
+
+                <div class="chips" style="margin-top:10px">
+                  <div class="chip">⏱️ Planned <b class="mono" id="activePlanned">50:00</b></div>
+                  <div class="chip">🧭 <b id="activeType">STUDY</b></div>
+                </div>
+
+                <div class="kpi">
+                  <div>
+                    <div class="small">Elapsed</div>
+                    <div class="big mono" id="elapsed">00:00</div>
+                  </div>
+                  <div style="text-align:right">
+                    <div class="small">Phase</div>
+                    <div style="font-weight:900" id="phase">Ready</div>
+                  </div>
+                </div>
+
+                <div class="meter">
+                  <div class="bar"><div class="fill" id="fill"></div></div>
+                  <div class="meterlabels">
+                    <span id="meterLeft">Planned</span>
+                    <span id="meterRight">ETA 50:00</span>
+                  </div>
+                </div>
+
+                <div class="actions">
+                  <button class="btn" id="holdBtn" disabled>Hold</button>
+                  <button class="btn" id="landBtn" disabled>Land</button>
+                  <button class="btn danger" id="abortBtn" disabled>Abort (50%)</button>
+                </div>
+                <div class="smallnote">Miles are awarded on landing. Aborting awards 50%.</div>
+              </div>
+
+              <div class="panel" id="notesPanel">
+                <div class="row">
+                  <h3 style="margin:0">Flight Notes</h3>
+                  <div class="chip">🗒️ <b>Scratchpad</b></div>
+                </div>
+                <div style="height:10px"></div>
+                <textarea id="notes" rows="8" placeholder="Write quick notes, checkpoints, or what you need to do next…"></textarea>
+                <div class="smallnote">During an active flight, notes are copied into the log at landing.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cabin upgrades -->
+        <div class="card">
+          <div class="pad">
+            <div class="row">
+              <h3>Cabin Upgrades</h3>
+              <div class="chip">↗️ <b>Spend miles</b></div>
+            </div>
+            <div id="store"></div>
+            <div class="smallnote">Tip: unlock a cabin once, then select it for future flights.</div>
+          </div>
+        </div>
+
+        <!-- Weekly ops -->
+        <div class="card">
+          <div class="pad">
+            <div class="row" style="align-items:center">
+              <div>
+                <h3>Weekly Ops Target</h3>
+                <div class="hint">Hit your 7-day goal to claim a one-time weekly bonus.</div>
+              </div>
+              <div style="display:flex;gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
+                <div class="chip">⏱️ Goal <b class="mono" id="goalChip">600</b> min</div>
+                <input id="weeklyGoalMin" type="number" min="60" max="3000" value="600" style="width:120px" />
+                <button class="btn" id="claimBonusBtn">Claim Bonus</button>
+              </div>
+            </div>
+
+            <div style="margin-top:10px">
+              <div class="bar"><div class="fill" id="weeklyFill"></div></div>
+              <div class="meterlabels">
+                <span class="mono" id="weeklyLeft">0 / 600 min</span>
+                <span id="weeklyRight">600 min remaining</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Log -->
+        <div class="card">
+          <div class="pad">
+            <div class="row">
+              <h3>Flight Log</h3>
+              <div class="chip">🗂️ <b class="mono" id="logCount">0</b> records</div>
+            </div>
+            <div id="log"></div>
+            <div class="smallnote" id="logTip"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer>FlightFocus HTML MVP • Local-first (saved in your browser) • Voice ATC + map routes can be layered later.</footer>
+  </div>
+
+  <script>
+    // ===== Data & helpers =====
+    const LS_KEY = "flightfocus_html_v01";
+    const BASE_RATE = 10; // miles per focused minute
+
+    const AIRCRAFT = [
+      { id:"A220", name:"A220", vibe:"Agile short hop", base:1.00 },
+      { id:"A320", name:"A320", vibe:"Balanced mid-range", base:1.05 },
+      { id:"B737", name:"B737", vibe:"Classic workhorse", base:1.05 },
+      { id:"B787", name:"B787", vibe:"Long-haul stability", base:1.12 },
+      { id:"A350", name:"A350", vibe:"Ultra-smooth cruise", base:1.14 },
+    ];
+
+    const CABIN = [
+      { id:"ECO",  name:"Economy", mult:1.00, cost:0 },
+      { id:"PREM", name:"Premium", mult:1.10, cost:2500 },
+      { id:"BUS",  name:"Business", mult:1.25, cost:7000 },
+      { id:"FST",  name:"First",    mult:1.45, cost:15000 },
+    ];
+
+    const STATUS = {
+      READY:"READY", TAXI:"TAXI", CLIMB:"CLIMB", CRUISE:"CRUISE", DESCENT:"DESCENT", LANDED:"LANDED", ABORTED:"ABORTED",
+    };
+
+    const $ = (id)=>document.getElementById(id);
+    const pad2 = (n)=>String(n).padStart(2,"0");
+
+    function msToHMS(ms){
+      const s = Math.max(0, Math.floor(ms/1000));
+      const hh = Math.floor(s/3600);
+      const mm = Math.floor((s%3600)/60);
+      const ss = s%60;
+      return hh>0 ? `${hh}:${pad2(mm)}:${pad2(ss)}` : `${mm}:${pad2(ss)}`;
+    }
+    function minsFromMs(ms){ return Math.max(0, Math.round(ms/60000)); }
+    function nowIso(){ return new Date().toISOString(); }
+    function uid(){ return Math.random().toString(36).slice(2,10) + "_" + Date.now().toString(36); }
+    function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
+
+    function startOfDay(d){
+      const x=new Date(d); x.setHours(0,0,0,0); return x;
+    }
+    function withinLastDays(dateIso, days){
+      const t = new Date(dateIso).getTime();
+      const since = startOfDay(new Date()).getTime() - (days-1)*24*60*60*1000;
+      return t>=since;
+    }
+    function calc7dMinutes(logs){
+      return logs
+        .filter(l=>withinLastDays(l.endedAt || l.createdAt, 7))
+        .reduce((sum,l)=>sum + minsFromMs(l.focusMs||0), 0);
+    }
+    function gradeFrom7d(mins){
+      if (mins >= 1500) return { id:"BLACK", name:"Black", mult:1.35 };
+      if (mins >= 900)  return { id:"PLAT",  name:"Platinum", mult:1.25 };
+      if (mins >= 420)  return { id:"GOLD",  name:"Gold", mult:1.15 };
+      if (mins >= 180)  return { id:"SILV",  name:"Silver", mult:1.08 };
+      return { id:"MEM", name:"Member", mult:1.00 };
+    }
+    function calcMiles({focusMs, aborted, aircraftId, cabinId, gradeMult}){
+      const mins = minsFromMs(focusMs);
+      const ac = AIRCRAFT.find(a=>a.id===aircraftId) || AIRCRAFT[1];
+      const cab = CABIN.find(c=>c.id===cabinId) || CABIN[0];
+      const raw = mins * BASE_RATE * ac.base * cab.mult * gradeMult;
+      const adj = aborted ? raw*0.5 : raw;
+      return Math.round(adj);
+    }
+    function statusLabel(s){
+      if (s===STATUS.TAXI) return "Taxi";
+      if (s===STATUS.CLIMB) return "Climb";
+      if (s===STATUS.CRUISE) return "Cruise";
+      if (s===STATUS.DESCENT) return "Descent";
+      if (s===STATUS.LANDED) return "Landed";
+      if (s===STATUS.ABORTED) return "Aborted";
+      return "Ready";
+    }
+    function formatDate(iso){
+      try{
+        const d = new Date(iso);
+        return d.toLocaleString(undefined,{month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+      }catch{return iso;}
+    }
+    function isoWeekToken(){
+      const d=new Date();
+      const onejan=new Date(d.getFullYear(),0,1);
+      const week=Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7);
+      return `${d.getFullYear()}-W${week}`;
+    }
+
+    // ===== State =====
+    const defaultState = {
+      miles: 0,
+      ownedCabins: ["ECO"],
+      selectedCabin: "ECO",
+      weeklyGoalMin: 600,
+      notes: "",
+      draft: { title:"", type:"STUDY", plannedMin:50, aircraftId:"A320", cabinId:"ECO" },
+      active: null,
+      logs: [],
+    };
+
+    let state = loadState() || structuredClone(defaultState);
+
+    function loadState(){
+      try{
+        const s = localStorage.getItem(LS_KEY);
+        if(!s) return null;
+        return JSON.parse(s);
+      }catch(e){ return null; }
+    }
+    function saveState(){
+      try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+    }
+
+    // ===== Timer tick =====
+    let timer = null;
+    function getActiveElapsedMs(){
+      if(!state.active) return 0;
+      const base = state.active.elapsedMs || 0;
+      if(!state.active.running) return base;
+      const delta = Date.now() - (state.active.lastStartTs || Date.now());
+      return base + delta;
+    }
+    function computePhase(){
+      if(!state.active) return STATUS.READY;
+      const p = state.active.plannedMs || 0;
+      const e = getActiveElapsedMs();
+      if (state.active.status===STATUS.ABORTED || state.active.status===STATUS.LANDED) return state.active.status;
+      if (e < Math.min(60000, p*0.10)) return STATUS.TAXI;
+      if (e < p*0.25) return STATUS.CLIMB;
+      if (e < p*0.85) return STATUS.CRUISE;
+      return STATUS.DESCENT;
+    }
+
+    // ===== UI render =====
+    function render(){
+      // derived
+      const mins7d = calc7dMinutes(state.logs);
+      const grade = gradeFrom7d(mins7d);
+
+      $("gradeName").textContent = grade.name;
+      $("mins7d").textContent = String(mins7d);
+      $("rate").textContent = String(BASE_RATE);
+      $("miles").textContent = Number(state.miles || 0).toLocaleString();
+
+      // draft controls -> keep in sync
+      $("draftAircraftChip").textContent = state.draft.aircraftId;
+
+      // projected miles
+      const plannedMs = (Number(state.draft.plannedMin)||0) * 60 * 1000;
+      const draftCabin = state.ownedCabins.includes(state.draft.cabinId) ? state.draft.cabinId : state.selectedCabin;
+      const projected = calcMiles({
+        focusMs: plannedMs,
+        aborted:false,
+        aircraftId: state.draft.aircraftId,
+        cabinId: draftCabin,
+        gradeMult: grade.mult
+      });
+      $("projectedMiles").textContent = projected.toLocaleString();
+
+      // cabin hint
+      $("cabinHint").textContent = state.ownedCabins.includes(state.draft.cabinId) ? "Owned" : "Locked";
+
+      // start tip
+      const canStart = (state.draft.title || "").trim().length >= 1 && Number(state.draft.plannedMin||0) >= 5;
+      $("startTip").style.display = (state.active || canStart) ? "none" : "block";
+      $("startBtn").disabled = !!state.active || !canStart;
+
+      // active display
+      const active = state.active;
+      const elapsed = getActiveElapsedMs();
+      const phase = computePhase();
+      const activePlannedMs = active ? active.plannedMs : plannedMs;
+
+      $("activeAircraft").textContent = active ? active.aircraftId : state.draft.aircraftId;
+      const cabName = (CABIN.find(c=>c.id === (active ? active.cabinId : draftCabin)) || CABIN[0]).name;
+      $("activeCabin").textContent = cabName;
+      $("activeGrade").textContent = grade.name;
+
+      $("activeTitle").textContent = active ? active.title : "—";
+      $("activePlanned").textContent = msToHMS(activePlannedMs);
+      $("activeType").textContent = active ? active.type : state.draft.type;
+
+      $("elapsed").textContent = msToHMS(elapsed);
+      $("phase").textContent = statusLabel(phase);
+
+      // meter
+      const pct = activePlannedMs <= 0 ? 0 : clamp((elapsed/activePlannedMs)*100, 0, 200);
+      $("fill").style.width = pct + "%";
+      $("meterLeft").textContent = active ? "On route" : "Planned";
+      const remain = Math.max(0, activePlannedMs - elapsed);
+      $("meterRight").textContent = remain > 0 ? ("ETA " + msToHMS(remain)) : "At/over target";
+
+      // buttons for active
+      $("holdBtn").disabled = !active;
+      $("landBtn").disabled = !active;
+      $("abortBtn").disabled = !active;
+      $("holdBtn").textContent = active ? (active.running ? "Hold" : "Resume") : "Hold";
+
+      // notes
+      $("notes").value = state.notes || "";
+
+      // weekly
+      $("weeklyGoalMin").value = state.weeklyGoalMin;
+      $("goalChip").textContent = String(state.weeklyGoalMin);
+      const weeklyPct = clamp((mins7d / Math.max(1, state.weeklyGoalMin))*100, 0, 200);
+      $("weeklyFill").style.width = weeklyPct + "%";
+      $("weeklyLeft").textContent = `${mins7d} / ${state.weeklyGoalMin} min`;
+      $("weeklyRight").textContent = mins7d >= state.weeklyGoalMin ? "Cleared" : `${Math.max(0, state.weeklyGoalMin - mins7d)} min remaining`;
+
+      const bonusKey = "flightfocus_html_week_bonus";
+      const token = isoWeekToken();
+      const claimed = localStorage.getItem(bonusKey) === token;
+      $("claimBonusBtn").disabled = claimed || (mins7d < state.weeklyGoalMin);
+      $("claimBonusBtn").textContent = claimed ? "Claimed" : "Claim Bonus";
+
+      // store
+      renderStore();
+
+      // logs
+      renderLogs(grade);
+
+      saveState();
+    }
+
+    function renderStore(){
+      const container = $("store");
+      container.innerHTML = "";
+      CABIN.forEach(c=>{
+        const owned = state.ownedCabins.includes(c.id);
+        const affordable = state.miles >= c.cost;
+        const item = document.createElement("div");
+        item.className = "storeItem";
+        item.innerHTML = `
+          <div class="top">
+            <div>
+              <div class="name">${c.name} <span class="tag">×${c.mult}</span> ${
+                owned ? '<span class="tag">✓ Owned</span>' : `<span class="tag">🔒 ${c.cost.toLocaleString()} mi</span>`
+              }</div>
+              <div class="desc">${c.id==="ECO" ? "Baseline operations." :
+                c.id==="PREM" ? "Smoother cruise. Better yield." :
+                c.id==="BUS" ? "High-performance routing." :
+                "Flagship cabin. Max yield."}</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end">
+              ${owned
+                ? `<button class="btn ${state.selectedCabin===c.id ? "primary" : ""}" data-action="select" data-id="${c.id}">${state.selectedCabin===c.id ? "Selected" : "Select"}</button>`
+                : `<button class="btn" data-action="unlock" data-id="${c.id}" ${(!affordable || c.cost===0) ? "disabled" : ""}>${affordable ? "Unlock" : "Insufficient"}</button>`
+              }
+            </div>
+          </div>
+        `;
+        item.addEventListener("click",(e)=>{
+          const btn = e.target.closest("button");
+          if(!btn) return;
+          const action = btn.getAttribute("data-action");
+          const id = btn.getAttribute("data-id");
+          if(action==="select"){
+            state.selectedCabin = id;
+            state.draft.cabinId = id;
+            render();
+          }
+          if(action==="unlock"){
+            buyCabin(id);
+          }
+        });
+        container.appendChild(item);
+      });
+    }
+
+    function renderLogs(grade){
+      const container = $("log");
+      container.innerHTML = "";
+      $("logCount").textContent = String(state.logs.length);
+
+      if(state.logs.length===0){
+        const empty = document.createElement("div");
+        empty.className = "logItem";
+        empty.innerHTML = `<div style="color:var(--muted)">No flights yet. Create a flight plan and depart.</div>`;
+        container.appendChild(empty);
+        $("logTip").textContent = "";
+        return;
+      }
+
+      state.logs.slice(0,30).forEach(l=>{
+        const ac = AIRCRAFT.find(a=>a.id===l.aircraftId);
+        const cab = CABIN.find(c=>c.id===l.cabinId);
+        const aborted = l.status===STATUS.ABORTED;
+        const earned = calcMiles({
+          focusMs:l.focusMs,
+          aborted,
+          aircraftId:l.aircraftId,
+          cabinId:l.cabinId,
+          gradeMult: grade.mult
+        });
+
+        const div = document.createElement("div");
+        div.className = "logItem";
+        div.innerHTML = `
+          <div class="logTop">
+            <div>
+              <div class="logTitle">${escapeHtml(l.title)}</div>
+              <div class="logMeta">
+                ${formatDate(l.endedAt || l.createdAt)} • Focus ${msToHMS(l.focusMs)} • Planned ${msToHMS(l.plannedMs)}
+              </div>
+              <div class="chips" style="margin-top:8px">
+                <div class="chip">✈️ <b>${ac ? ac.name : l.aircraftId}</b></div>
+                <div class="chip">↗️ <b>${cab ? cab.name : l.cabinId} ×${cab ? cab.mult : 1}</b></div>
+                <div class="chip">${aborted ? "⚠️" : "✅"} <b>${aborted ? "Aborted" : "Landed"}</b></div>
+              </div>
+              ${l.note ? `<div class="logNote">${escapeHtml(l.note)}</div>` : ""}
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px">
+              <div style="text-align:right">
+                <div class="hint">Miles (est.)</div>
+                <div class="mono" style="font-weight:900; font-size:16px">${earned.toLocaleString()}</div>
+              </div>
+              <button class="btn" data-del="${l.id}">Delete</button>
+            </div>
+          </div>
+        `;
+        div.querySelector("button[data-del]").addEventListener("click",()=>{
+          state.logs = state.logs.filter(x=>x.id !== l.id);
+          render();
+        });
+        container.appendChild(div);
+      });
+
+      $("logTip").textContent = state.logs.length>30 ? "Showing latest 30. (Stored up to 200.)" : "";
+    }
+
+    function escapeHtml(str){
+      return String(str||"")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    // ===== Actions =====
+    function buyCabin(cabinId){
+      const cab = CABIN.find(c=>c.id===cabinId);
+      if(!cab) return;
+      if(state.ownedCabins.includes(cabinId)) return;
+      if(state.miles < cab.cost) return;
+      state.miles -= cab.cost;
+      state.ownedCabins.push(cabinId);
+      state.selectedCabin = cabinId;
+      state.draft.cabinId = cabinId;
+      render();
+    }
+
+    function startFlight(){
+      const title = (state.draft.title||"").trim();
+      const plannedMin = Number(state.draft.plannedMin||0);
+      if(!title || plannedMin < 5) return;
+
+      const grade = gradeFrom7d(calc7dMinutes(state.logs));
+      const plannedMs = plannedMin * 60 * 1000;
+      const cabinId = state.ownedCabins.includes(state.draft.cabinId) ? state.draft.cabinId : state.selectedCabin;
+
+      state.active = {
+        id: uid(),
+        title,
+        type: state.draft.type,
+        aircraftId: state.draft.aircraftId,
+        cabinId,
+        plannedMs,
+        createdAt: nowIso(),
+        status: STATUS.TAXI,
+        running: true,
+        elapsedMs: 0,
+        lastStartTs: Date.now(),
+        note: state.notes || "",
+      };
+
+      // start ticking
+      if(timer) clearInterval(timer);
+      timer = setInterval(render, 300);
+      render();
+    }
+
+    function pauseFlight(){
+      if(!state.active || !state.active.running) return;
+      const delta = Date.now() - (state.active.lastStartTs || Date.now());
+      state.active.elapsedMs = (state.active.elapsedMs||0) + delta;
+      state.active.running = false;
+      render();
+    }
+
+    function resumeFlight(){
+      if(!state.active || state.active.running) return;
+      state.active.running = true;
+      state.active.lastStartTs = Date.now();
+      render();
+    }
+
+    function landFlight({aborted=false}={}){
+      if(!state.active) return;
+
+      // finalize elapsed
+      let finalMs = state.active.elapsedMs || 0;
+      if(state.active.running){
+        finalMs += Date.now() - (state.active.lastStartTs || Date.now());
+      }
+
+      const endedAt = nowIso();
+      const entry = {
+        id: state.active.id,
+        title: state.active.title,
+        type: state.active.type,
+        aircraftId: state.active.aircraftId,
+        cabinId: state.active.cabinId,
+        plannedMs: state.active.plannedMs,
+        focusMs: finalMs,
+        createdAt: state.active.createdAt,
+        endedAt,
+        status: aborted ? STATUS.ABORTED : STATUS.LANDED,
+        note: state.active.note || "",
+      };
+
+      const mins7d = calc7dMinutes(state.logs);
+      const grade = gradeFrom7d(mins7d);
+      const earned = calcMiles({
+        focusMs: finalMs,
+        aborted,
+        aircraftId: entry.aircraftId,
+        cabinId: entry.cabinId,
+        gradeMult: grade.mult,
+      });
+
+      state.miles += earned;
+      state.logs.unshift(entry);
+      state.logs = state.logs.slice(0,200);
+      state.active = null;
+
+      if(timer){ clearInterval(timer); timer = null; }
+      render();
+    }
+
+    function resetAll(){
+      localStorage.removeItem(LS_KEY);
+      localStorage.removeItem("flightfocus_html_week_bonus");
+      state = structuredClone(defaultState);
+      if(timer){ clearInterval(timer); timer = null; }
+      render();
+    }
+
+    function claimWeeklyBonus(){
+      const mins7d = calc7dMinutes(state.logs);
+      if(mins7d < state.weeklyGoalMin) return;
+      const key = "flightfocus_html_week_bonus";
+      const token = isoWeekToken();
+      if(localStorage.getItem(key) === token) return;
+      const bonus = Math.round(state.weeklyGoalMin * 2); // 2 miles per goal minute
+      state.miles += bonus;
+      localStorage.setItem(key, token);
+      render();
+    }
+
+    // ===== Bind inputs =====
+    function init(){
+      // populate selects
+      const aircraftSel = $("aircraft");
+      AIRCRAFT.forEach(a=>{
+        const opt=document.createElement("option");
+        opt.value=a.id;
+        opt.textContent = `${a.name} — ${a.vibe}`;
+        aircraftSel.appendChild(opt);
+      });
+      const cabinSel = $("cabin");
+      CABIN.forEach(c=>{
+        const opt=document.createElement("option");
+        opt.value=c.id;
+        opt.textContent = `${c.name} ×${c.mult}${state.ownedCabins.includes(c.id) ? "" : " • " + c.cost.toLocaleString() + " mi"}`;
+        cabinSel.appendChild(opt);
+      });
+
+      // initial values
+      $("title").value = state.draft.title || "";
+      $("type").value = state.draft.type || "STUDY";
+      $("plannedMin").value = state.draft.plannedMin || 50;
+      $("aircraft").value = state.draft.aircraftId || "A320";
+      $("cabin").value = state.draft.cabinId || "ECO";
+      $("weeklyGoalMin").value = state.weeklyGoalMin || 600;
+      $("notes").value = state.notes || "";
+
+      // listeners
+      $("title").addEventListener("input",(e)=>{ state.draft.title = e.target.value; render(); });
+      $("type").addEventListener("change",(e)=>{ state.draft.type = e.target.value; render(); });
+      $("plannedMin").addEventListener("input",(e)=>{ state.draft.plannedMin = clamp(Number(e.target.value||0),5,480); render(); });
+      $("aircraft").addEventListener("change",(e)=>{ state.draft.aircraftId = e.target.value; $("draftAircraftChip").textContent = e.target.value; render(); });
+      $("cabin").addEventListener("change",(e)=>{ state.draft.cabinId = e.target.value; render(); });
+      $("weeklyGoalMin").addEventListener("input",(e)=>{ state.weeklyGoalMin = clamp(Number(e.target.value||0),60,3000); render(); });
+      $("notes").addEventListener("input",(e)=>{ state.notes = e.target.value; saveState(); });
+
+      $("startBtn").addEventListener("click", startFlight);
+      $("holdBtn").addEventListener("click", ()=>{
+        if(!state.active) return;
+        if(state.active.running) pauseFlight(); else resumeFlight();
+      });
+      $("landBtn").addEventListener("click", ()=>landFlight({aborted:false}));
+      $("abortBtn").addEventListener("click", ()=>landFlight({aborted:true}));
+
+      $("resetBtn").addEventListener("click", ()=>{
+        if(confirm("Reset all data on this device?")) resetAll();
+      });
+
+      $("claimBonusBtn").addEventListener("click", claimWeeklyBonus);
+
+      $("scrollNotesBtn").addEventListener("click", ()=>{
+        $("notesPanel").scrollIntoView({behavior:"smooth", block:"center"});
+      });
+
+      // If an active flight exists (from previous session), resume ticking
+      if(state.active && state.active.running){
+        if(timer) clearInterval(timer);
+        timer=setInterval(render, 300);
+      }
+
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
